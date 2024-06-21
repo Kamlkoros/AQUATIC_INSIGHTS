@@ -30,6 +30,7 @@ class _MyAppState extends State<MyApp> {
         _downloading = false;
       });
     });
+    cleanUpOldPdfs();
     SchedulerBinding.instance.addPostFrameCallback((_) {
       fetchAll();
     });
@@ -38,6 +39,32 @@ class _MyAppState extends State<MyApp> {
   Future<void> fetchAll() async {
     FlutterDisplayMode.setHighRefreshRate();
     setState(() {});
+  }
+
+  Future<void> cleanUpOldPdfs() async {
+    var documentDirectory = await getApplicationDocumentsDirectory();
+    var pdfDirectory = Directory(path.join(documentDirectory.path, 'pdfs'));
+
+    if (!pdfDirectory.existsSync()) {
+      return;
+    }
+
+    final cutoffDate = DateTime.now().subtract(const Duration(days: 31));
+    var files = pdfDirectory.listSync();
+
+    var filesToDelete = files.where((file) {
+      var fileName = path.basenameWithoutExtension(file.path);
+      try {
+        var fileDate = DateFormat('dd-MM-yyyy').parse(fileName);
+        return fileDate.isBefore(cutoffDate);
+      } catch (e) {
+        return false;
+      }
+    });
+
+    for (var file in filesToDelete) {
+      file.deleteSync();
+    }
   }
 
   Future<void> downloadAllPdfs() async {
@@ -50,7 +77,6 @@ class _MyAppState extends State<MyApp> {
         pdfDirectory.createSync(recursive: true);
       }
       var file = File(path.join(pdfDirectory.path, '$date.pdf'));
-      print(file);
       if (!file.existsSync()) {
         try {
           var response = await http.get(Uri.parse(url));
@@ -62,41 +88,31 @@ class _MyAppState extends State<MyApp> {
           // Handle the exception here. You might want to show a notification to the user, for example.
         }
       }
-      // var files = pdfDirectory.listSync();
-
-      // var filesToDelete = files.where((file) {
-      //   var fileName = path.basenameWithoutExtension(file.path);
-      //   return !lastTenDays.contains(fileName);
-      // });
-
-      // for (var file in filesToDelete) {
-      //   file.deleteSync();
-      // }
     }
 
     var fileNames = pdfDirectory
-    .listSync()
-    .map((fileSystemEntity) {
-      var fileName = path.basename(fileSystemEntity.path);
-      if (fileName.length <= 10) {
-        return '';
-      } else {
-        return fileName.substring(0, 10);
-      }
-    })
-    .where((fileName) => fileName.isNotEmpty)
-    .toList();
+        .listSync()
+        .map((fileSystemEntity) {
+          var fileName = path.basename(fileSystemEntity.path);
+          if (fileName.length <= 10) {
+            return '';
+          } else {
+            return fileName.substring(0, 10);
+          }
+        })
+        .where((fileName) => fileName.isNotEmpty)
+        .toList();
 
-fileNames.sort((a, b) {
-  DateFormat format = DateFormat("dd-MM-yyyy");
-  DateTime dateA = format.parse(a);
-  DateTime dateB = format.parse(b);
-  return dateA.compareTo(dateB);
-});availableDays.addAll(fileNames.reversed);
-if(availableDays.isNotEmpty){
-  pdfAvailable = true;
-} 
-print(availableDays);
+    fileNames.sort((a, b) {
+      DateFormat format = DateFormat("dd-MM-yyyy");
+      DateTime dateA = format.parse(a);
+      DateTime dateB = format.parse(b);
+      return dateA.compareTo(dateB);
+    });
+    availableDays.addAll(fileNames.reversed);
+    if (availableDays.isNotEmpty) {
+      pdfAvailable = true;
+    }
   }
 
   @override
@@ -107,7 +123,7 @@ print(availableDays);
         brightness: Brightness.dark,
       ),
       home: MainScreen(
-        pdfAvailable : pdfAvailable,
+        pdfAvailable: pdfAvailable,
         downloading: _downloading,
       ),
       debugShowCheckedModeBanner: false,

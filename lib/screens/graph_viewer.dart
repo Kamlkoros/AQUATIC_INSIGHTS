@@ -52,8 +52,7 @@ class GraphViewer extends StatelessWidget {
     double maxData = double.negativeInfinity;
 
     for (int index = 0; index < currentdays; index++) {
-      String day = availableDays[currentdays-1 - index]
-          .substring(0, 2);
+      String day = availableDays[currentdays-1 - index];
       int dataIndex = dataList.length - 1 - index;
       if (dataIndex >= 0 && dataIndex < dataList.length) {
         double dataValue = double.parse(dataList[dataIndex]);

@@ -57,8 +57,6 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
-    print(widget.pdfAvailable);
-    print(widget.downloading);
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
